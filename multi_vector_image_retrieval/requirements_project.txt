@@ -1,0 +1,7 @@
+qdrant-client==1.15.1
+colpali-engine==0.3.13
+pandas==2.3.2
+pyarrow==21.0.0
+torch>=2.0.0
+Pillow>=10.0.0
+jupyter-ai>=3.0.0b9,<3.1
