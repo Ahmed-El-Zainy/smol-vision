@@ -275,6 +275,7 @@ def visualize_token_similarity(
             show_colorbar=False,
         )
         
+        
         output_path = OUTPUT_DIR / f"similarity_map_{target_token}.png"
         fig.savefig(output_path, bbox_inches='tight', dpi=150)
         logger.info(f"Saved similarity map to: {output_path}")
