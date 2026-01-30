@@ -1,0 +1,21 @@
+# python package requirements file
+# Cross-platform compatible - works on macOS, Linux, and Windows
+#
+# For CPU-only on Linux/Windows, use: requirements-cpu.txt
+# For CUDA on Linux/Windows, install torch separately with the appropriate index URL
+
+jupyter==1.1.1
+colpali-engine[interpretability] @ git+https://github.com/kacperlukawski/colpali.git@feature/colsmol-patches
+transformers==4.53.1
+torch==2.5.1
+torchvision==0.20.1
+scikit-learn
+plotly==6.3.0
+qdrant-client==1.15.1
+fastembed==0.7.3
+pandas==2.3.2
+pdf2image==1.17.0
+pyarrow==21.0.0
+openai==2.2.0
+python-dotenv==1.0.1
+

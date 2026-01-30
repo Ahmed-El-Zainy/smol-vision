@@ -1,0 +1,20 @@
+# CPU-only requirements for Linux/Windows
+# For smaller package size without CUDA dependencies
+# Not compatible with macOS - use requirements.txt instead
+
+--extra-index-url https://download.pytorch.org/whl/cpu
+
+jupyter==1.1.1
+colpali-engine[interpretability] @ git+https://github.com/kacperlukawski/colpali.git@feature/colsmol-patches
+transformers==4.53.1
+torch==2.5.1+cpu
+torchvision==0.20.1+cpu
+scikit-learn
+plotly==6.3.0
+qdrant-client==1.15.1
+fastembed==0.7.3
+pandas==2.3.2
+pdf2image==1.17.0
+pyarrow==21.0.0
+openai==2.2.0
+python-dotenv==1.0.1
