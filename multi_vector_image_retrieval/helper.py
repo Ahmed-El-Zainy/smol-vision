@@ -1,13 +1,13 @@
-from typing import Iterable, Iterator, Any
 import base64
 from io import BytesIO
+from typing import Any, Iterable, Iterator
 
 import numpy as np
-from fastembed import LateInteractionTextEmbedding
-from PIL import Image
-from pdf2image import convert_from_path
-from IPython.display import HTML
 import plotly.graph_objects as go
+from fastembed import LateInteractionTextEmbedding
+from IPython.display import HTML
+from pdf2image import convert_from_path
+from PIL import Image
 
 
 def tokenize_late_interaction(
@@ -1993,15 +1993,16 @@ def load_or_compute_image_embeddings(
         ...     load_precomputed=False
         ... )
     """
-    import pandas as pd
     import numpy as np
+    import pandas as pd
 
     if not load_precomputed:
-        import torch
         from pathlib import Path
+
+        import torch
+        from colpali_engine.models import ColPali, ColPaliProcessor
         from PIL import Image
         from tqdm import tqdm
-        from colpali_engine.models import ColPali, ColPaliProcessor
 
         # Convert PDFs to screenshots (if not already done)
         input_dir = Path("ro_shared_data/pdfs")
@@ -2194,17 +2195,18 @@ def load_sample_image_embeddings(
         ...     load_precomputed=False
         ... )
     """
-    import pandas as pd
     import numpy as np
+    import pandas as pd
 
     SAMPLE_SIZE = 100  # Number of images to load/compute
 
     if not load_precomputed:
-        import torch
         from pathlib import Path
+
+        import torch
+        from colpali_engine.models import ColPali, ColPaliProcessor
         from PIL import Image
         from tqdm import tqdm
-        from colpali_engine.models import ColPali, ColPaliProcessor
 
         # Convert PDFs to screenshots (if not already done)
         input_dir = Path("ro_shared_data/pdfs")
@@ -2388,6 +2390,7 @@ def yield_optimized_embeddings(
         ...     client.upsert(...)
     """
     from pathlib import Path
+
     import pandas as pd
 
     embeddings_path = Path(embeddings_dir)
@@ -2411,7 +2414,13 @@ def yield_optimized_embeddings(
             chunk_df = pd.read_parquet(chunk_file, engine="pyarrow")
 
             # Convert embeddings to numpy arrays if needed
-            for col in ["original", "hierarchical_2x", "hierarchical_4x", "row_pooled", "column_pooled"]:
+            for col in [
+                "original",
+                "hierarchical_2x",
+                "hierarchical_4x",
+                "row_pooled",
+                "column_pooled",
+            ]:
                 if col in chunk_df.columns:
                     chunk_df[col] = chunk_df[col].apply(np.stack)
 
@@ -2419,7 +2428,9 @@ def yield_optimized_embeddings(
             for _, row in chunk_df.iterrows():
                 # Filter by allowed documents if specified
                 if allowed_docs is not None:
-                    is_allowed = any(fname in row["image_path"] for fname in allowed_docs)
+                    is_allowed = any(
+                        fname in row["image_path"] for fname in allowed_docs
+                    )
                     if not is_allowed:
                         continue
 
@@ -2460,7 +2471,9 @@ def yield_optimized_embeddings(
         processor = ColPaliProcessor.from_pretrained(model_name)
 
         # Helper functions for optimizations
-        def hierarchical_token_pooling(arr: np.ndarray, pool_factor: int = 2) -> np.ndarray:
+        def hierarchical_token_pooling(
+            arr: np.ndarray, pool_factor: int = 2
+        ) -> np.ndarray:
             arr_tensor = torch.from_numpy(arr[np.newaxis, :, :])
             pooled = pooler.pool_embeddings(arr_tensor, pool_factor=pool_factor)
             return pooled.cpu().detach().numpy()[0]
@@ -2493,11 +2506,13 @@ def yield_optimized_embeddings(
                 chunk_df.iterrows(),
                 total=len(chunk_df),
                 desc=f"Processing {chunk_file.name}",
-                leave=False
+                leave=False,
             ):
                 # Filter by allowed documents if specified
                 if allowed_docs is not None:
-                    is_allowed = any(fname in row["image_path"] for fname in allowed_docs)
+                    is_allowed = any(
+                        fname in row["image_path"] for fname in allowed_docs
+                    )
                     if not is_allowed:
                         continue
 
@@ -2507,29 +2522,40 @@ def yield_optimized_embeddings(
                 # Compute all optimizations
                 vectors_dict = {
                     "original": row["image_embedding"],
-                    "hierarchical_2x": hierarchical_token_pooling(row["image_embedding"], 2),
-                    "hierarchical_4x": hierarchical_token_pooling(row["image_embedding"], 4),
+                    "hierarchical_2x": hierarchical_token_pooling(
+                        row["image_embedding"], 2
+                    ),
+                    "hierarchical_4x": hierarchical_token_pooling(
+                        row["image_embedding"], 4
+                    ),
                     "row_pooled": row_mean_pooling(grid),
                     "column_pooled": column_mean_pooling(grid),
                 }
 
                 # Store for saving to parquet (convert arrays to lists for PyArrow compatibility)
-                optimized_rows.append({
-                    "image_path": row["image_path"],
-                    "original": vectors_dict["original"].tolist(),
-                    "hierarchical_2x": vectors_dict["hierarchical_2x"].tolist(),
-                    "hierarchical_4x": vectors_dict["hierarchical_4x"].tolist(),
-                    "row_pooled": vectors_dict["row_pooled"].tolist(),
-                    "column_pooled": vectors_dict["column_pooled"].tolist(),
-                })
+                optimized_rows.append(
+                    {
+                        "image_path": row["image_path"],
+                        "original": vectors_dict["original"].tolist(),
+                        "hierarchical_2x": vectors_dict["hierarchical_2x"].tolist(),
+                        "hierarchical_4x": vectors_dict["hierarchical_4x"].tolist(),
+                        "row_pooled": vectors_dict["row_pooled"].tolist(),
+                        "column_pooled": vectors_dict["column_pooled"].tolist(),
+                    }
+                )
 
                 # Yield immediately so caller can start upserting (keep as numpy arrays)
                 yield row["image_path"], vectors_dict
 
             # Save optimized chunk to parquet
             optimized_df = pd.DataFrame(optimized_rows)
-            chunk_number = chunk_file.stem.split("-")[-1]  # Extract "001" from "chunk-001"
-            output_file = output_path / f"colpali-embeddings-optimized-chunk-{chunk_number}.parquet"
+            chunk_number = chunk_file.stem.split("-")[
+                -1
+            ]  # Extract "001" from "chunk-001"
+            output_file = (
+                output_path
+                / f"colpali-embeddings-optimized-chunk-{chunk_number}.parquet"
+            )
             optimized_df.to_parquet(output_file, engine="pyarrow")
             print(f"Saved {output_file}")
 
@@ -2583,6 +2609,7 @@ def yield_muvera_embeddings(
         ...     ])
     """
     from pathlib import Path
+
     import pandas as pd
 
     embeddings_path = Path(embeddings_dir)
@@ -2671,14 +2698,16 @@ def load_or_compute_attention_embeddings(
         ...     model_name="vidore/colpali-v1.3"
         ... )
     """
-    import pandas as pd
-    import numpy as np
     from pathlib import Path
+
+    import numpy as np
+    import pandas as pd
 
     # Auto-detect model name if not provided
     if model_name is None:
         # Auto-detect based on CUDA availability
         import torch
+
         if torch.cuda.is_available():
             model_name = "vidore/colpali-v1.3"
         else:
@@ -2695,14 +2724,16 @@ def load_or_compute_attention_embeddings(
         parquet_path = f"ro_shared_data/attention-is-all-you-need/{cache_name}"
 
     if not load_precomputed:
-        import torch
         from glob import glob
-        from tqdm import tqdm
+
+        import torch
         from PIL import Image
+        from tqdm import tqdm
 
         # Load model and processor
         if "colSmol" in model_name or "colsmol" in model_name.lower():
-            from colpali_engine.models import ColIdefics3Processor, ColIdefics3
+            from colpali_engine.models import ColIdefics3, ColIdefics3Processor
+
             processor = ColIdefics3Processor.from_pretrained(model_name)
             model = ColIdefics3.from_pretrained(
                 model_name,
@@ -2711,7 +2742,8 @@ def load_or_compute_attention_embeddings(
                 device_map="cpu",
             )
         else:
-            from colpali_engine.models import ColPaliProcessor, ColPali
+            from colpali_engine.models import ColPali, ColPaliProcessor
+
             processor = ColPaliProcessor.from_pretrained(model_name)
             model = ColPali.from_pretrained(
                 model_name,
@@ -2727,7 +2759,9 @@ def load_or_compute_attention_embeddings(
         embeddings = []
 
         # Generate embeddings for each image
-        for file_path in tqdm(image_paths, desc="Generating attention paper embeddings"):
+        for file_path in tqdm(
+            image_paths, desc="Generating attention paper embeddings"
+        ):
             # Load image
             image = Image.open(file_path)
 
@@ -2748,10 +2782,12 @@ def load_or_compute_attention_embeddings(
             image.close()
 
         # Create DataFrame
-        embeddings_df = pd.DataFrame({
-            "file_path": file_paths,
-            "image_embedding": embeddings,
-        })
+        embeddings_df = pd.DataFrame(
+            {
+                "file_path": file_paths,
+                "image_embedding": embeddings,
+            }
+        )
 
         # Save to parquet
         Path(parquet_path).parent.mkdir(parents=True, exist_ok=True)
@@ -2772,9 +2808,13 @@ def load_or_compute_attention_embeddings(
     # We need to stack them into proper 2D arrays [num_patches, 128]
     first_emb = embeddings_df["image_embedding"].iloc[0]
     if isinstance(first_emb, np.ndarray) and first_emb.dtype == object:
-        embeddings_df["image_embedding"] = embeddings_df["image_embedding"].apply(np.stack)
+        embeddings_df["image_embedding"] = embeddings_df["image_embedding"].apply(
+            np.stack
+        )
     elif not isinstance(first_emb, np.ndarray):
-        embeddings_df["image_embedding"] = embeddings_df["image_embedding"].apply(np.array)
+        embeddings_df["image_embedding"] = embeddings_df["image_embedding"].apply(
+            np.array
+        )
 
     return embeddings_df
 
@@ -3017,7 +3057,9 @@ def recreate_colpali_optimizations_collection(
     imported_count = 0
     for i, (image_path, vectors) in enumerate(
         tqdm(
-            yield_optimized_embeddings(load_precomputed=True, allowed_docs=allowed_docs),
+            yield_optimized_embeddings(
+                load_precomputed=True, allowed_docs=allowed_docs
+            ),
             desc="Upserting embeddings",
         )
     ):
